@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <unistd.h>
+#include <curl/curl.h>
 
 // Define a structure for queue elements.
 typedef struct URLQueueNode {
@@ -99,4 +100,5 @@ int main(int argc, char *argv[]) {
     // You may need to add additional cleanup logic here.
     
     return 0;
+
 }
