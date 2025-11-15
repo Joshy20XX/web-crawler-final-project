@@ -24,10 +24,26 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
     
-    if (argc < 2) {
-        printf("Usage: %s <starting-url> <ending-url>\n", argv[0]);
+    if (argc == 1) {
+        printf("Usage: %s <starting-url> <ending-url> <depth>\n", argv[0]);
         return 1;
     }
+
+    else if (argc > 4) {
+        printf("There's too many arguments! Abort!\n");
+        return 1;
+    }
+
+    else if (argc == 2) {
+        printf("A starting URL was provided without an ending URL or a depth value. Abort!\n");
+        return 1;
+    }
+
+    else if (argc == 3) {
+        printf("No depth value was provided. Abort!\n");
+        return 1;
+    }
+    
 
     //set options
     curl_easy_setopt(curl,CURLOPT_URL,argv[1]);

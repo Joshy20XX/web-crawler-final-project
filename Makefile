@@ -1,7 +1,9 @@
 all: build
 build:
 	@echo "Building"
-	gcc assignment1.c -o shell -lcurl
+	gcc experimentalURLGrabFile.c -o crawler -lcurl
+	@echo "Done!"
 clean:
 	@echo "Cleaning"
-	rm shell
+	rm crawler
+	@echo "Done!"
