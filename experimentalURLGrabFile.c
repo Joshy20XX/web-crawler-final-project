@@ -4,6 +4,7 @@
 
 //create a function which takes the page and then assigns it a queue of all of the article links present within it.
 
+void parseHTML(FILE*); //Prototype
 
 //Main function. 
 int main(int argc, char *argv[]) {
@@ -59,9 +60,29 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "download issue: %s\n",curl_easy_strerror(result));
 
     }
+     //DO NOT DELETE.  REWINDS POINTER FOR FILE TO THE , BC IT IS AT THE END AFTER WRITING.  2 HOURS WERE WASTED PRIOR TO ITS DISCOVERY.  YOU 
+    //HAVE BEEN WARNED.  
+    rewind(outfile);
+
+    //Put file into parseHTML
+    parseHTML(outfile);
 
     //cleans up the whole shabang when done.
     curl_easy_cleanup(curl);
     fclose(outfile);
     return EXIT_SUCCESS;
+}
+
+void parseHTML(FILE *fileptr)
+{
+    char line[256];
+
+    if(fileptr == NULL){printf("Error: You didn't give a file dummy\n");}
+
+    if(fgets(line, sizeof(line), fileptr)!=NULL)
+    {
+        //JUST PROVES YOU CAN ACCESS THE FILE AND RUN THE FIRST LINE
+        printf("The first line of the file is as follows: %s\n",line);
+    }
+    else{printf("Error: Empty File Input\n");}
 }
