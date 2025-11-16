@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "download issue: %s\n",curl_easy_strerror(result));
 
     }
-     //DO NOT DELETE.  REWINDS POINTER FOR FILE TO THE , BC IT IS AT THE END AFTER WRITING.  2 HOURS WERE WASTED PRIOR TO ITS DISCOVERY.  YOU 
+     //DO NOT DELETE.  REWINDS POINTER FOR FILE TO THE BEGINNING, BC IT IS AT THE END AFTER WRITING.  2 HOURS WERE WASTED PRIOR TO ITS DISCOVERY.  YOU 
     //HAVE BEEN WARNED.  
     rewind(outfile);
 
