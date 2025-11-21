@@ -5,6 +5,7 @@
 
 //create a function which takes the page and then assigns it a queue of all of the article links present within it.
 
+//Create the parser function which then outputs each additional wikipedia page onto a txt file.  
 int parseHTML(FILE*); //Prototype
 
 //Main function. 
