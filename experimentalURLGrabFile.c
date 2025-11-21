@@ -28,7 +28,8 @@ int main(int argc, char *argv[]) {
     }
     
     if (argc == 1) {
-        printf("Usage: %s <starting-url> <ending-url> <depth>\n", argv[0]);
+        printf("Usage: %s <starting-url> <ending-url> <depth>\n" 
+            "NOTE: If any URL contains parentheses or special characters, enclose it with quote marks: '/URL/()'\n", argv[0]);
         return 1;
     }
 
@@ -46,7 +47,6 @@ int main(int argc, char *argv[]) {
         printf("No depth value was provided. Abort!\n");
         return 1;
     }
-    
 
     //set options
     curl_easy_setopt(curl,CURLOPT_URL,argv[1]);
