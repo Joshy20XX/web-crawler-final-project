@@ -5,7 +5,7 @@
 
 //create a function which takes the page and then assigns it a queue of all of the article links present within it.
 
-void parseHTML(FILE*); //Prototype
+int parseHTML(FILE*); //Prototype
 
 //Main function. 
 int main(int argc, char *argv[]) {
