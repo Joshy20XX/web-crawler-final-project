@@ -79,10 +79,37 @@ void parseHTML(FILE *fileptr)
 
     if(fileptr == NULL){printf("Error: You didn't give a file dummy\n");}
 
-    if(fgets(line, sizeof(line), fileptr)!=NULL)
+    while(fgets(line, sizeof(line), fileptr)!=NULL)
     {
-        //JUST PROVES YOU CAN ACCESS THE FILE AND RUN THE FIRST LINE
-        printf("The first line of the file is as follows: %s\n",line);
+        //JUST PROVES YOU CAN ACCESS THE FILE AND RUN THE FIRST LINE.
+        //What we first need to do is parse the individual line for what could be in it, then add it to the document.  
+        //For example, we need to find the <a href=", then extract what is between the set of quotation marks to get the next url.
+        char *opening_ptr = strstr(line,opening);
+        if(opening_ptr!=NULL) 
+        {
+            char *articleNameStart=opening_ptr+strlen(opening); //Creates a pointer to the start of the article name
+            char *closing_ptr = strstr(articleNameStart,closing); //Creates a pointer towards where the statement closes
+            
+            if(closing_ptr!=NULL)
+            {
+                int articleNameLength = closing_ptr-articleNameStart;
+                char *articleName = (char *)malloc(articleNameLength+1);
+                
+                if(articleName==NULL) //FAIL CONDITION
+                {
+                    perror("Failed Memory Allocation");
+                    fclose(links);
+                    return EXIT_FAILURE;
+                }
+                strncpy(articleName,articleNameStart,articleNameLength);
+                articleName[articleNameLength]='\0';
+
+                fprintf(links,"https://en.wikipedia.org/wiki/%s\n",articleName);
+                free(articleName);
+            }
+            //Write it so that it might be able to do multiple links in one line instead of one link per.  
+            //Likely would need to create a function to house it.  Probably just keep calling it before the pointer
+            //reaches the null termination or when the line is over.  Might work best.
+        }
     }
-    else{printf("Error: Empty File Input\n");}
 }
