@@ -59,14 +59,35 @@ char *dequeue(URLQueue *queue) {
     return url;
 }
 
+void destroyQueue(URLQueue *queue) {          
+    pthread_mutex_lock(&queue->lock);         
+
+    URLQueueNode *cur = queue->head;          
+    while (cur) {                              
+        URLQueueNode *next = cur->next;       
+        free(cur->url);                       
+        free(cur);                            
+        cur = next;                           
+    }                                         
+
+    queue->head = queue->tail = NULL;        
+    pthread_mutex_unlock(&queue->lock);       
+    pthread_mutex_destroy(&queue->lock);      
+}                                             
+
 // Placeholder for the function to fetch and process a URL.
 void *fetch_url(void *arg) {
     // Cast arg to your queue or custom data structure.
     URLQueue *queue = (URLQueue *)arg;
-    
-    // TODO: Implement fetching and processing logic here.
-    // This could involve sending HTTP requests, parsing HTML content to find links,
-    // and adding new URLs to the queue.
+    // added a worker loop to the function
+    while (1) {
+        char *url = dequeue(queue);
+        if (url == NULL) break;
+        printf("[Thread %lu] Processing URL: %s\n",
+            (unsigned long)pthread_self(), url);
+        sleep(1);
+        free(url);                                      
+      }                            
 
     return NULL;
 }
@@ -82,8 +103,11 @@ int main(int argc, char *argv[]) {
     initQueue(&queue);
     enqueue(&queue, argv[1]);
 
-    // Placeholder for creating and joining threads.
-    // You will need to create multiple threads and distribute the work of URL fetching among them.
+    
+// added a multi-URL enqueue loop    
+    for (int i = 1; i < argc; i++) {
+        enqueue(&queue, argv[i]);                        
+     }     
     const int NUM_THREADS = 4; // Example thread count, adjust as needed.
     pthread_t threads[NUM_THREADS];
 
@@ -96,9 +120,9 @@ int main(int argc, char *argv[]) {
         pthread_join(threads[i], NULL);
     }
 
-    // Cleanup and program termination.
-    // You may need to add additional cleanup logic here.
+    destroyQueue(&queue);
     
     return 0;
 
 }
+
