@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-void parseHTML(FILE *fileptr)
+int parseHTML(FILE *fileptr)
 {
     FILE *links;
     char line[256];
@@ -126,4 +126,5 @@ void parseHTML(FILE *fileptr)
             //reaches the null termination or when the line is over.  Might work best.
         }
     }
+    fclose(links);
 }
