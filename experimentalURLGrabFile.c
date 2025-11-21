@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <curl/curl.h>
 
 //create a function which takes the page and then assigns it a queue of all of the article links present within it.
