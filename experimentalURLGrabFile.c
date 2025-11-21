@@ -77,53 +77,48 @@ int main(int argc, char *argv[]) {
 
 int parseHTML(FILE *fileptr)
 {
+    //Declarations here. 
     FILE *links;
+    
+    //For the line in the file and file search position. 
     char line[256];
-    char *line_ptr = line;
-    int capturing =0;
+    char *current_search_position;
 
+    //For the opening and closing strings and pointers to hold the indexes of those strings.  
     const char *opening="<a href=\"/wiki/";
     const char *closing="\"";
+    char *opening_ptr, *closing_ptr; //Opening and closing pointers for the location of the string opening and closing.
 
+    //Opens the file for writing
     links = fopen("allWikipediaLinksinArticle.txt","w+"); //File for all of the links.
-
-    if(fileptr == NULL){printf("Error: You didn't give a file dummy\n");}
+    //Checks if the entered file has nothing to error out.  
+    if(fileptr == NULL){printf("Error: You didn't give a file dummy\n");return EXIT_FAILURE;}
 
     //Loop through the file to get the text just after the marker text: 
     //<a href="/wiki/American_Revolutionary_War" title="American Revolutionary War">Revolutionary War</a>
-    //Get it to the before portion of the end.  
+    //Marker text (opening) is present at the head of the article, then grab the section between then and the ".
     
     while(fgets(line, sizeof(line), fileptr)!=NULL)
     {
-        //JUST PROVES YOU CAN ACCESS THE FILE AND RUN THE FIRST LINE.
-        //What we first need to do is parse the individual line for what could be in it, then add it to the document.  
-        //For example, we need to find the <a href=", then extract what is between the set of quotation marks to get the next url.
-        char *opening_ptr = strstr(line,opening);
-        if(opening_ptr!=NULL) 
+        //moves the search position in the file to the beginning of the line.  
+        current_search_position = line;
+        
+        //Make a second while loop to comb through the whole line as to not miss any. 
+        while((opening_ptr = strstr(current_search_position,opening))!=NULL)
         {
-            char *articleNameStart=opening_ptr+strlen(opening); //Creates a pointer to the start of the article name
-            char *closing_ptr = strstr(articleNameStart,closing); //Creates a pointer towards where the statement closes
-            
-            if(closing_ptr!=NULL)
+            current_search_position = opening_ptr +strlen(opening);
+            if((closing_ptr = strstr(current_search_position,closing))!=NULL)
             {
-                int articleNameLength = closing_ptr-articleNameStart;
-                char *articleName = (char *)malloc(articleNameLength+1);
-                
-                if(articleName==NULL) //FAIL CONDITION
-                {
-                    perror("Failed Memory Allocation");
-                    fclose(links);
-                    return EXIT_FAILURE;
-                }
-                strncpy(articleName,articleNameStart,articleNameLength);
-                articleName[articleNameLength]='\0';
+                int articleNameLength = closing_ptr-current_search_position; //Finds the nameLength
+                char *articleName = (char *)malloc(articleNameLength+1); //Allocates memory to fit length of article name
 
-                fprintf(links,"https://en.wikipedia.org/wiki/%s\n",articleName);
-                free(articleName);
-            }
-            //Write it so that it might be able to do multiple links in one line instead of one link per.  
-            //Likely would need to create a function to house it.  Probably just keep calling it before the pointer
-            //reaches the null termination or when the line is over.  Might work best.
+                strncpy(articleName,current_search_position,articleNameLength); //Copies the string value of name to ArticleName.
+                articleName[articleNameLength]='\0';//Adds null character to the name.  
+
+                current_search_position=closing_ptr+strlen(closing); //Moves the position of the linereader
+                fprintf(links,"https://en.wikipedia.org/wiki/%s\n",articleName); //prints article name to the file
+                free(articleName); //then frees the memory space.  
+            }  
         }
     }
     fclose(links);
