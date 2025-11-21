@@ -75,10 +75,22 @@ int main(int argc, char *argv[]) {
 
 void parseHTML(FILE *fileptr)
 {
+    FILE *links;
     char line[256];
+    char *line_ptr = line;
+    int capturing =0;
+
+    const char *opening="<a href=\"/wiki/";
+    const char *closing="\"";
+
+    links = fopen("allWikipediaLinksinArticle.txt","w+"); //File for all of the links.
 
     if(fileptr == NULL){printf("Error: You didn't give a file dummy\n");}
 
+    //Loop through the file to get the text just after the marker text: 
+    //<a href="/wiki/American_Revolutionary_War" title="American Revolutionary War">Revolutionary War</a>
+    //Get it to the before portion of the end.  
+    
     while(fgets(line, sizeof(line), fileptr)!=NULL)
     {
         //JUST PROVES YOU CAN ACCESS THE FILE AND RUN THE FIRST LINE.
