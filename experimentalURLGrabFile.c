@@ -8,6 +8,8 @@
 //Create the parser function which then outputs each additional wikipedia page onto a txt file.  
 int parseHTML(FILE*inputFile,FILE*outputFile,char*target_name); //Prototype
 
+int grabURL(char *start_link, char *target_link,FILE *URL_outputFile, FILE *links_file); //Prototype
+
 //Main function. 
 int main(int argc, char *argv[]) {
     CURL *curl = curl_easy_init();
@@ -145,4 +147,69 @@ int parseHTML(FILE *fileptr,FILE *outFileptr,char *target_name)
             }  
         }
     }
+}
+
+int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *links_file)
+{
+    //NOTE:  In a multithreaded environment, grabURL should be given thread-specific HTML output file and thread specific links
+    //       file.  This is because each thread operates in serial, but all n threads work in parallel; if they share only one
+    //       file pair, then they are not gonna work properly and likely will write over one another whenever convenient, which
+    //       can be called an absolute and utter failure on my part to plan.  That being said, when done in serial and with a 
+    //       queue for the links within the article, there should be no concern as to whether or not the file is overwritten,
+    //       as the links data will be stored within the queue (with blocks made to fit specific lengths or something to that
+    //       extent).  The point is, this function is made to be messed with, but I recommend the inputs remain the same.
+    
+    //Takes arguments of a starting link, a target link, and then an HTML output file and a file which will use parseHTML to 
+    //output all links to other articles present within that article to that file.  Queueing can then be done from there
+    CURL *curl = curl_easy_init();
+    
+    //Checks if curl isn't working, in which case it fails on initialization.  
+    if (!curl)
+    {
+        fprintf(stderr,"init failed\n");
+        return EXIT_FAILURE;
+    }
+
+    //Set options for CURL, specifically the url to use, the registered user agent name, the XOAUTH2 key, then allows it to
+    //write the curl data to the HTML output file.  
+    curl_easy_setopt(curl,CURLOPT_URL,start_link);
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, "RutgersUniGroupDJZ");
+    curl_easy_setopt(curl, CURLOPT_XOAUTH2_BEARER, "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiJlZjg4NDQxMjk5Yzg0NWU5NTBjN2YwNDc5OGQ2NGQwMyIsImp0aSI6IjkwYmMyOTVhNTNiMzU1MmJmMjNlNmIzYmVlNGE5MWEyY2Q2ZGIzYTdkNTFiZThhZTRlMjExZWFmMWU5NjNjODAwMzcyOTMwMDcyYzNkM2JjIiwiaWF0IjoxNzYzMTYwNzA3LjQ2MTc2OCwibmJmIjoxNzYzMTYwNzA3LjQ2MTc3MSwiZXhwIjozMzMyMDA2OTUwNy40NTg5NTQsInN1YiI6IjgwNTE0NDg3IiwiaXNzIjoiaHR0cHM6Ly9tZXRhLndpa2ltZWRpYS5vcmciLCJyYXRlbGltaXQiOnsicmVxdWVzdHNfcGVyX3VuaXQiOjUwMDAsInVuaXQiOiJIT1VSIn0sInNjb3BlcyI6WyJiYXNpYyJdfQ.pkjZM6VqH9eHWJO4E54X1J2W2N95Se3kkYAPoXiJiROUakyl4TRPO7KAFTd5_CvYrkNtRv2RMh0jZyi-Bdc8MOTjvMZLPUIfo-pd9yNzrCDzrFTovJJ9MkW5qCRVXOD4APcXrrkjQbT_Rnt5y3LcnlqKZJBAFJiOVNz71-SyyMrsqO0o0kV5g6rIrP2WyhO9mT-L7XcitAy58mFFfzrcKBkwDAsj5FA7eJeTvPrAkZUB4l-SR_vfQzWfnGovsCzyATZbK6Z6QxPIC2sVdrQ2vNrxgRVe0d4x4lMwWPDUuaDbW3-8KGRcQ3Qns_BYm2ZiAx4yJIODHqY5ZLwH9-0hFhNadolWqMNBqsbMD7nNXDhrLNO71pih-qaCKjibvFUgADekZ0D-VoDBRtIBAmw4NQvvEgOGxh4z0rJ4tlwM61J-RJj9TOJLNwb7Bi-8bWWJANdQraC7YzELLF3Umh5iYBRNdDSwFkzHF0g2zq_UO6mj1ZbOY6_xL0joOP0m9sf_hO1pZ7OCcZAVM5Gks_7t91GJgME7Ui0iLHCsyF0ieQvqmJ7EmoNv9AvAzNcA2hmRnpNoFLKLpFYcg3qs4LGIAd_GBX9C_sMvdizwUNbQYHaQwMydOhrSVRwih-EmapDR8A26HimnbYOcC30zjvBFxIsusI-HJtf_yExTuIZc6Y");
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, HTML_outputFile);
+
+    //For the target article, this first allocates the memory for the variable to fit the article name.  
+    char *target = (char *)malloc(strlen(target_link)+1); //Allocates memory to fit length of article name
+    target=target_link;
+    target[strlen(target_link)]='\0';//stores it with delimiter character.  
+    size_t target_len = strlen(target); //Grabs size.  
+
+    const char *prefix = "https://en.wikipedia.org/wiki/";
+    size_t prefix_len = strlen(prefix); //Grabs size so it isn't called like 5 million times.  
+
+    //At this point, it checks if the target contains the prefix string, in which case it moves the memory such that 
+    //target.  Should look into whether or not memory needs to be reallocked to prevent memory leaks/wastage.  
+    if(target_len>=prefix_len && strncmp(target,prefix,prefix_len)==0)
+    {
+        memmove(target, target + prefix_len, target_len-prefix_len+1); //Moves the modified,cmped string to the initial str var.  
+    }
+
+    //Checks and verifies that everything went okay with the curling of the link.  If it fails, flags a download problem.  
+    CURLcode result = curl_easy_perform(curl);
+    if(result!=CURLE_OK)
+    {
+        fprintf(stderr, "download issue: %s\n",curl_easy_strerror(result));
+
+    }
+    //DO NOT DELETE.  REWINDS POINTER TO THE BEGINNING, BC IT IS AT THE END AFTER WRITING.  
+    //2 HOURS WERE WASTED PRIOR TO ITS DISCOVERY.  YOU HAVE BEEN WARNED.  THE SESAME WILL DIE AND I HAVE TOLD YOU. 
+    rewind(HTML_outputFile);
+
+    //Put file into parseHTML with the fullDataFile, the links, and the target.  
+    parseHTML(HTML_outputFile,links_file,target);
+
+    //cleans up the whole shabang when done.
+    curl_easy_cleanup(curl);
+    fclose(HTML_outputFile); //Closes the file
+    fclose(links_file); //Closes the links file
+    return EXIT_SUCCESS; //Ends the whole thing with a good note.
 }
