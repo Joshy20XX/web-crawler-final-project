@@ -60,7 +60,8 @@ char *dequeue(URLQueue *queue) {
 }
 
 //Destroy the queue and free its memory once everything is done.
-void destroyQueue(URLQueue *queue) {          
+void destroyQueue(URLQueue *queue) {    
+    printf("Destroying Queue!\n");      
     //pthread_mutex_lock(&queue->lock);         
 
     URLQueueNode *cur = queue->head;          
@@ -80,9 +81,10 @@ void destroyQueue(URLQueue *queue) {
 void printQueue(URLQueue *queue) {
     URLQueueNode *cur = queue->head;
 
+    printf("Printing Queue: \n");
     while (cur != NULL) {
         URLQueueNode *next = cur->next;  
-        printf("%s ->", cur->url);
+        printf("%s", cur->url);
         cur = next;
     }
 }
@@ -90,7 +92,7 @@ void printQueue(URLQueue *queue) {
 //Create the parser function which then outputs each additional wikipedia page onto a txt file.  
 int parseHTML(FILE*inputFile,FILE*outputFile,char*target_name); //Prototype
 
-int grabURL(char *start_link, char *target_link,FILE *URL_outputFile, FILE *links_file); //Prototype
+int grabURL(char *start_link, char *target_link,FILE *URL_outputFile, FILE *links_file, URLQueue *queue); //Prototype
 
 //int queueURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *links_file); //NONSENSE
 
@@ -148,62 +150,7 @@ int main(int argc, char *argv[]) {
     curl_easy_setopt(curl, CURLOPT_XOAUTH2_BEARER, "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiJlZjg4NDQxMjk5Yzg0NWU5NTBjN2YwNDc5OGQ2NGQwMyIsImp0aSI6IjkwYmMyOTVhNTNiMzU1MmJmMjNlNmIzYmVlNGE5MWEyY2Q2ZGIzYTdkNTFiZThhZTRlMjExZWFmMWU5NjNjODAwMzcyOTMwMDcyYzNkM2JjIiwiaWF0IjoxNzYzMTYwNzA3LjQ2MTc2OCwibmJmIjoxNzYzMTYwNzA3LjQ2MTc3MSwiZXhwIjozMzMyMDA2OTUwNy40NTg5NTQsInN1YiI6IjgwNTE0NDg3IiwiaXNzIjoiaHR0cHM6Ly9tZXRhLndpa2ltZWRpYS5vcmciLCJyYXRlbGltaXQiOnsicmVxdWVzdHNfcGVyX3VuaXQiOjUwMDAsInVuaXQiOiJIT1VSIn0sInNjb3BlcyI6WyJiYXNpYyJdfQ.pkjZM6VqH9eHWJO4E54X1J2W2N95Se3kkYAPoXiJiROUakyl4TRPO7KAFTd5_CvYrkNtRv2RMh0jZyi-Bdc8MOTjvMZLPUIfo-pd9yNzrCDzrFTovJJ9MkW5qCRVXOD4APcXrrkjQbT_Rnt5y3LcnlqKZJBAFJiOVNz71-SyyMrsqO0o0kV5g6rIrP2WyhO9mT-L7XcitAy58mFFfzrcKBkwDAsj5FA7eJeTvPrAkZUB4l-SR_vfQzWfnGovsCzyATZbK6Z6QxPIC2sVdrQ2vNrxgRVe0d4x4lMwWPDUuaDbW3-8KGRcQ3Qns_BYm2ZiAx4yJIODHqY5ZLwH9-0hFhNadolWqMNBqsbMD7nNXDhrLNO71pih-qaCKjibvFUgADekZ0D-VoDBRtIBAmw4NQvvEgOGxh4z0rJ4tlwM61J-RJj9TOJLNwb7Bi-8bWWJANdQraC7YzELLF3Umh5iYBRNdDSwFkzHF0g2zq_UO6mj1ZbOY6_xL0joOP0m9sf_hO1pZ7OCcZAVM5Gks_7t91GJgME7Ui0iLHCsyF0ieQvqmJ7EmoNv9AvAzNcA2hmRnpNoFLKLpFYcg3qs4LGIAd_GBX9C_sMvdizwUNbQYHaQwMydOhrSVRwih-EmapDR8A26HimnbYOcC30zjvBFxIsusI-HJtf_yExTuIZc6Y");
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, fullDataFile);
 
-    //Set argv[2] or the target article as a variable, then get rid of the string before it.  
-    char *target = (char *)malloc(strlen(argv[2])+1); //Allocates memory to fit length of article name
-    target=argv[2];
-    target[strlen(argv[2])]='\0';//stores it with delimiter character.  
-    size_t target_len = strlen(target); //Grabs size.  
-
-    //Defines prefix, aka, what would be at the front of the article.  
-    const char *prefix = "https://en.wikipedia.org/wiki/";
-    size_t prefix_len = strlen(prefix); //Grabs size so it isn't called 5 million times.  
-
-    //Eliminates article https prefix from the given name and returns that as the target variable.  
-    if(target_len>=prefix_len && strncmp(target,prefix,prefix_len)==0)
-    {
-        memmove(target, target + prefix_len, target_len-prefix_len+1); //Moves the modified,cmped string to the initial str var.  
-    }
-    //ERGO, target is now just the target articlename and prepped for comparison in the HTML Parser.  
-    //printf("%s\n",target);
-
-    //perform output actions:
-    CURLcode result = curl_easy_perform(curl);
-    if(result!=CURLE_OK)
-    {
-        fprintf(stderr, "download issue: %s\n",curl_easy_strerror(result));
-
-    }
-    //DO NOT DELETE.  REWINDS POINTER TO THE BEGINNING, BC IT IS AT THE END AFTER WRITING.  
-    //2 HOURS WERE WASTED PRIOR TO ITS DISCOVERY.  YOU HAVE BEEN WARNED.  
-    rewind(fullDataFile);
-
-    //Put file into parseHTML with the fullDataFile, the links, and the target.  
-    parseHTML(fullDataFile,links,target);
-
-    //Check if the line is NULL, if so stop
-    if(links == NULL)
-    {
-        fprintf(stderr, "error opening the right file, dummy\n");
-        return EXIT_FAILURE;
-    }
-
-    // Initialize the queue for URL grabbing
-    initQueue(&queue);
-
-    rewind(links); //I DID IT TOO, ARGH >:(
-
-    // While there's still lines of text in the links file, queue each url and add the rest of the functionality later
-    // I need to get other assignments done :/
-    while (fgets(line, sizeof(line), links)!= NULL) {
-        enqueue(&queue, line);
-    }
-    printQueue(&queue);
-
-
-    //cleans up the whole shabang when done.
-    curl_easy_cleanup(curl);
-    fclose(fullDataFile);
-    fclose(links);
+    grabURL(argv[1], argv[2], fullDataFile, links, &queue);
     return EXIT_SUCCESS;
 }
 
@@ -256,7 +203,7 @@ int parseHTML(FILE *fileptr,FILE *outFileptr,char *target_name)
     }
 }
 
-int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *links_file)
+int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *links_file, URLQueue *queue)
 {
     //NOTE:  In a multithreaded environment, grabURL should be given thread-specific HTML output file and thread specific links
     //       file.  This is because each thread operates in serial, but all n threads work in parallel; if they share only one
@@ -268,6 +215,7 @@ int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *lin
     
     //Takes arguments of a starting link, a target link, and then an HTML output file and a file which will use parseHTML to 
     //output all links to other articles present within that article to that file.  Queueing can then be done from there
+    char line[1024];
     CURL *curl = curl_easy_init();
     
     //Checks if curl isn't working, in which case it fails on initialization.  
@@ -314,20 +262,29 @@ int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *lin
     //Put file into parseHTML with the fullDataFile, the links, and the target.  
     parseHTML(HTML_outputFile,links_file,target);
 
+        //Check if the line is NULL, if so stop
+    if(links_file == NULL)
+    {
+        fprintf(stderr, "error opening the right file, dummy\n");
+        return EXIT_FAILURE;
+    }
+
+    // Initialize the queue for URL grabbing
+    initQueue(queue);
+
+    rewind(links_file); //I DID IT TOO, ARGH >:(
+
+    // While there's still lines of text in the links file, queue each url and add the rest of the functionality later
+    // I need to get other assignments done :/
+    while (fgets(line, sizeof(line), links_file)!= NULL) {
+        enqueue(queue, line);
+    }
+    printQueue(queue);
+
     //cleans up the whole shabang when done.
+    destroyQueue(queue);
     curl_easy_cleanup(curl);
-    fclose(HTML_outputFile); //Closes the file
-    fclose(links_file); //Closes the links file
+    fclose(HTML_outputFile);
+    fclose(links_file);
     return EXIT_SUCCESS; //Ends the whole thing with a good note.
-}
-
-//Make a queue function for queuing links that are passed. I feel this is what needs to be passed. Ask Don for verification :)
-int queueURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *links_file) {
-    URLQueue queue; //Define a queue
-    initQueue(&queue); //Initialize the queue
-
-
-    //grabURL(start_link, target_link, HTML_outputFile, links_file); //Start grabbing URLs from our arguments
-
-    return EXIT_SUCCESS;
 }
