@@ -9,7 +9,7 @@
 //URL Queue is a linked from what Im seeing. Define its structure for queue elements.
 typedef struct URLQueueNode {
     char *url;
-    struct URLQueueNode *next; //Points to the next node in the queue
+    struct URLQueueNode *next;
 } URLQueueNode;
 
 // Define a structure for a thread-safe queue but keep it single-threaded until further notice
@@ -74,38 +74,29 @@ void destroyQueue(URLQueue *queue) {
     queue->head = queue->tail = NULL;        
     /*pthread_mutex_unlock(&queue->lock);       
     pthread_mutex_destroy(&queue->lock);*/      
-}    
-
-//For debugging purposes, print what is in the URL queue
-void printQueue(URLQueue *queue) {
-    URLQueueNode *cur = queue->head;
-
-    while (cur != NULL) {
-        URLQueueNode *next = cur->next;  
-        printf("%s ->", cur->url);
-        cur = next;
-    }
-}
+}     
 
 //Create the parser function which then outputs each additional wikipedia page onto a txt file.  
 int parseHTML(FILE*inputFile,FILE*outputFile,char*target_name); //Prototype
 
 int grabURL(char *start_link, char *target_link,FILE *URL_outputFile, FILE *links_file); //Prototype
 
-//int queueURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *links_file); //NONSENSE
+// Make a queue for all queue related stuff
 
 //Main function. 
 int main(int argc, char *argv[]) {
     CURL *curl = curl_easy_init();
     FILE *fullDataFile;
-
     //Declarations here. 
     FILE *links;
     //Open the files
     fullDataFile = fopen("wikipediaDownload.txt","w+");
     links = fopen("allWikipediaLinksinArticle.txt","w+"); //File for all of the links.
-    URLQueue queue; //Define a queue
-    char line[1024]; //Define line buffer for text file
+
+    //Define a queue
+    URLQueue queue;
+    initQueue(&queue);
+    enqueue(&queue, argv[1]);
 
     if(fullDataFile == NULL)
     {
@@ -179,26 +170,6 @@ int main(int argc, char *argv[]) {
 
     //Put file into parseHTML with the fullDataFile, the links, and the target.  
     parseHTML(fullDataFile,links,target);
-
-    //Check if the line is NULL, if so stop
-    if(links == NULL)
-    {
-        fprintf(stderr, "error opening the right file, dummy\n");
-        return EXIT_FAILURE;
-    }
-
-    // Initialize the queue for URL grabbing
-    initQueue(&queue);
-
-    rewind(links); //I DID IT TOO, ARGH >:(
-
-    // While there's still lines of text in the links file, queue each url and add the rest of the functionality later
-    // I need to get other assignments done :/
-    while (fgets(line, sizeof(line), links)!= NULL) {
-        enqueue(&queue, line);
-    }
-    printQueue(&queue);
-
 
     //cleans up the whole shabang when done.
     curl_easy_cleanup(curl);
@@ -319,15 +290,4 @@ int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *lin
     fclose(HTML_outputFile); //Closes the file
     fclose(links_file); //Closes the links file
     return EXIT_SUCCESS; //Ends the whole thing with a good note.
-}
-
-//Make a queue function for queuing links that are passed. I feel this is what needs to be passed. Ask Don for verification :)
-int queueURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *links_file) {
-    URLQueue queue; //Define a queue
-    initQueue(&queue); //Initialize the queue
-
-
-    //grabURL(start_link, target_link, HTML_outputFile, links_file); //Start grabbing URLs from our arguments
-
-    return EXIT_SUCCESS;
 }
