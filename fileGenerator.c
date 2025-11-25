@@ -4,28 +4,8 @@
 
 #define MAX_THREADS 4
 
-char *generateFiles(const char *file_prefix, const char *file_suffix, int file_num)
-{
-    //get the size of the total file string including the prefix and the suffix.  
-    size_t totalLenFileName = (strlen(file_prefix)+(sizeof(char)*sizeof(int))+strlen(file_suffix)+1);
-
-    //allocate memory for the string.  
-    char *fileName = (char*)malloc(totalLenFileName*sizeof(char));
-
-    //Copies the prefix into fileName
-    strcpy(fileName,file_prefix);
-
-    //uses snprintf to concatenate the integer fileNum into the existing filename
-    snprintf(fileName+strlen(fileName), sizeof(fileName)-strlen(fileName),"%d",file_num);
-
-    strcat(fileName,file_suffix);
-
-    //Assign the null pointer at the end of it.  
-    fileName[totalLenFileName]='\0';
-    //printf("%i\n",totalLenFileName);
-    return fileName;
-    free(fileName);
-}
+//Declare prototype of file name generator.
+char *generateFiles(const char *fprefix,const char *fsuffix, int fnumber);
 
 int main()
 {
@@ -33,7 +13,7 @@ int main()
     // a loop can be made which closes the files which contain that particular indentifying number, also in the range of 0 and 
     // MAX_THREADS -1, using strcmp to determine that it ought to be closed from the file pool, as once the program has completed
     // everything ought to be closed.  
-    
+
     const char *prefix = "bungity_ungity";
     const char *suffix = ".txt";
     char *fileName;
@@ -57,4 +37,24 @@ int main()
         printf("%s\n",filePool[j]);
     }
 
+}
+
+//Actual file generator function.  
+char *generateFiles(const char *file_prefix, const char *file_suffix, int file_num)
+{
+    //get the size of the total file string including the prefix and the suffix.  
+    size_t totalLenFileName = (strlen(file_prefix)+(sizeof(char)*sizeof(int))+strlen(file_suffix)+1);
+    //allocate memory for the string.  
+    char *fileName = (char*)malloc(totalLenFileName*sizeof(char));
+    //Copies the prefix into fileName
+    strcpy(fileName,file_prefix);
+    //uses snprintf to concatenate the integer fileNum into the existing filename
+    snprintf(fileName+strlen(fileName), sizeof(fileName)-strlen(fileName),"%d",file_num);
+    //concats the suffix on.
+    strcat(fileName,file_suffix);
+    //Assign the null pointer at the end of it.  
+    fileName[totalLenFileName]='\0';
+    //return the name as the result of the function and free afterwards.  
+    return fileName;
+    free(fileName);
 }
