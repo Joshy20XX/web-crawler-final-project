@@ -68,7 +68,8 @@ void destroyQueue(URLQueue *queue) {
     while (cur) {                              
         URLQueueNode *next = cur->next;       
         free(cur->url);                       
-        free(cur);                            
+        free(cur);           
+        //printf("Node deleted");                 
         cur = next;                           
     }                                         
 
@@ -92,7 +93,7 @@ void printQueue(URLQueue *queue) {
 //Create the parser function which then outputs each additional wikipedia page onto a txt file.  
 int parseHTML(FILE*inputFile,FILE*outputFile,char*target_name); //Prototype
 
-int grabURL(char *start_link, char *target_link,FILE *URL_outputFile, FILE *links_file, URLQueue *queue); //Prototype
+int grabURL(char *start_link, char *target_link,FILE *URL_outputFile, FILE *links_file); //Prototype
 
 //int queueURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *links_file); //NONSENSE
 
@@ -106,8 +107,6 @@ int main(int argc, char *argv[]) {
     //Open the files
     fullDataFile = fopen("wikipediaDownload.txt","w+");
     links = fopen("allWikipediaLinksinArticle.txt","w+"); //File for all of the links.
-    URLQueue queue; //Define a queue
-    char line[1024]; //Define line buffer for text file
 
     if(fullDataFile == NULL)
     {
@@ -143,14 +142,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     
-
-    //set options
-    curl_easy_setopt(curl,CURLOPT_URL,argv[1]);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "RutgersUniGroupDJZ");
-    curl_easy_setopt(curl, CURLOPT_XOAUTH2_BEARER, "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiJlZjg4NDQxMjk5Yzg0NWU5NTBjN2YwNDc5OGQ2NGQwMyIsImp0aSI6IjkwYmMyOTVhNTNiMzU1MmJmMjNlNmIzYmVlNGE5MWEyY2Q2ZGIzYTdkNTFiZThhZTRlMjExZWFmMWU5NjNjODAwMzcyOTMwMDcyYzNkM2JjIiwiaWF0IjoxNzYzMTYwNzA3LjQ2MTc2OCwibmJmIjoxNzYzMTYwNzA3LjQ2MTc3MSwiZXhwIjozMzMyMDA2OTUwNy40NTg5NTQsInN1YiI6IjgwNTE0NDg3IiwiaXNzIjoiaHR0cHM6Ly9tZXRhLndpa2ltZWRpYS5vcmciLCJyYXRlbGltaXQiOnsicmVxdWVzdHNfcGVyX3VuaXQiOjUwMDAsInVuaXQiOiJIT1VSIn0sInNjb3BlcyI6WyJiYXNpYyJdfQ.pkjZM6VqH9eHWJO4E54X1J2W2N95Se3kkYAPoXiJiROUakyl4TRPO7KAFTd5_CvYrkNtRv2RMh0jZyi-Bdc8MOTjvMZLPUIfo-pd9yNzrCDzrFTovJJ9MkW5qCRVXOD4APcXrrkjQbT_Rnt5y3LcnlqKZJBAFJiOVNz71-SyyMrsqO0o0kV5g6rIrP2WyhO9mT-L7XcitAy58mFFfzrcKBkwDAsj5FA7eJeTvPrAkZUB4l-SR_vfQzWfnGovsCzyATZbK6Z6QxPIC2sVdrQ2vNrxgRVe0d4x4lMwWPDUuaDbW3-8KGRcQ3Qns_BYm2ZiAx4yJIODHqY5ZLwH9-0hFhNadolWqMNBqsbMD7nNXDhrLNO71pih-qaCKjibvFUgADekZ0D-VoDBRtIBAmw4NQvvEgOGxh4z0rJ4tlwM61J-RJj9TOJLNwb7Bi-8bWWJANdQraC7YzELLF3Umh5iYBRNdDSwFkzHF0g2zq_UO6mj1ZbOY6_xL0joOP0m9sf_hO1pZ7OCcZAVM5Gks_7t91GJgME7Ui0iLHCsyF0ieQvqmJ7EmoNv9AvAzNcA2hmRnpNoFLKLpFYcg3qs4LGIAd_GBX9C_sMvdizwUNbQYHaQwMydOhrSVRwih-EmapDR8A26HimnbYOcC30zjvBFxIsusI-HJtf_yExTuIZc6Y");
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, fullDataFile);
-
-    grabURL(argv[1], argv[2], fullDataFile, links, &queue);
+    grabURL(argv[1], argv[2], fullDataFile, links);
     return EXIT_SUCCESS;
 }
 
@@ -203,7 +195,7 @@ int parseHTML(FILE *fileptr,FILE *outFileptr,char *target_name)
     }
 }
 
-int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *links_file, URLQueue *queue)
+int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *links_file)
 {
     //NOTE:  In a multithreaded environment, grabURL should be given thread-specific HTML output file and thread specific links
     //       file.  This is because each thread operates in serial, but all n threads work in parallel; if they share only one
@@ -215,7 +207,12 @@ int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *lin
     
     //Takes arguments of a starting link, a target link, and then an HTML output file and a file which will use parseHTML to 
     //output all links to other articles present within that article to that file.  Queueing can then be done from there
+
+    //Define our queue and line buffer
+    URLQueue queue;
     char line[1024];
+
+    //Start curling
     CURL *curl = curl_easy_init();
     
     //Checks if curl isn't working, in which case it fails on initialization.  
@@ -270,19 +267,18 @@ int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *lin
     }
 
     // Initialize the queue for URL grabbing
-    initQueue(queue);
+    initQueue(&queue);
 
     rewind(links_file); //I DID IT TOO, ARGH >:(
 
     // While there's still lines of text in the links file, queue each url and add the rest of the functionality later
-    // I need to get other assignments done :/
     while (fgets(line, sizeof(line), links_file)!= NULL) {
-        enqueue(queue, line);
+        enqueue(&queue, line);
     }
-    printQueue(queue);
+    printQueue(&queue);
 
     //cleans up the whole shabang when done.
-    destroyQueue(queue);
+    destroyQueue(&queue);
     curl_easy_cleanup(curl);
     fclose(HTML_outputFile);
     fclose(links_file);
