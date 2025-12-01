@@ -90,8 +90,10 @@ void printQueue(URLQueue *queue) {
     }
 }
 
+//create a function which takes the page and then assigns it a queue of all of the article links present within it.
+
 //Create the parser function which then outputs each additional wikipedia page onto a txt file.  
-int parseHTML(FILE*inputFile,FILE*outputFile,char*target_name); //Prototype
+int parseHTML(FILE*inputFile,FILE*outputFile,char*start_name,char*target_name); //Prototype
 
 int grabURL(char *start_link, char *target_link,FILE *URL_outputFile, FILE *links_file); //Prototype
 
@@ -146,7 +148,7 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int parseHTML(FILE *fileptr,FILE *outFileptr,char *target_name)
+int parseHTML(FILE *fileptr,FILE *outFileptr,char *current_name,char *target_name)
 {
     //For the line in the file and file search position. 
     char line[1024];
@@ -155,6 +157,8 @@ int parseHTML(FILE *fileptr,FILE *outFileptr,char *target_name)
     const char *opening="<a href=\"/wiki/";
     const char *closing="\"";
     char *opening_ptr, *closing_ptr; //Opening and closing pointers for the location of the string opening and closing.
+
+
     //Opens the file for writing
     //Checks if the entered file has nothing to error out.  
     if(fileptr == NULL){printf("Error: You didn't give a file dummy\n");return EXIT_FAILURE;}
@@ -179,7 +183,18 @@ int parseHTML(FILE *fileptr,FILE *outFileptr,char *target_name)
                 articleName[articleNameLength]='\0';//Adds null character to the name.  
 
                 current_search_position=closing_ptr+strlen(closing); //Moves the position of the linereader
-                fprintf(outFileptr,"https://en.wikipedia.org/wiki/%s\n",articleName); //prints article name to the file
+
+
+                //Contain in an if statement; make all failure points for common files; i.e. if it contains.  
+                if(strstr(articleName,"File:")==NULL && strstr(articleName,"Category:")==NULL && strstr(articleName,"Help:")==NULL && strstr(articleName,"Wikipedia:")==NULL && strstr(articleName,"Talk:")==NULL && strstr(articleName,"Special:")==NULL && strstr(articleName,"Template:")==NULL && strstr(articleName,"Portal:")==NULL && strstr(articleName, "Main_Page")==NULL)
+                {
+                    //Check if the article contains itself before adding.  If even contains itself, more likely to loop i.e. bad news.  
+                    //ALL of this is for the sake of making it a shit ton easier to traverse.  
+                    if(strstr(articleName, current_name)==NULL)
+                    {
+                        fprintf(outFileptr,"https://en.wikipedia.org/wiki/%s\n",articleName); //prints article name to the file
+                    }
+                }
 
                 //Check if the article name matches the article name of the target using strcmp.  Exits if success, should 
                 //work well as a general condition.   
@@ -207,12 +222,6 @@ int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *lin
     
     //Takes arguments of a starting link, a target link, and then an HTML output file and a file which will use parseHTML to 
     //output all links to other articles present within that article to that file.  Queueing can then be done from there
-
-    //Define our queue and line buffer
-    URLQueue queue;
-    char line[1024];
-
-    //Start curling
     CURL *curl = curl_easy_init();
     
     //Checks if curl isn't working, in which case it fails on initialization.  
@@ -235,6 +244,13 @@ int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *lin
     target[strlen(target_link)]='\0';//stores it with delimiter character.  
     size_t target_len = strlen(target); //Grabs size.  
 
+    //For the current article, this first allocates memory in the same way for the target article (helps to make prog more efficient)
+    char *current = (char *)malloc(strlen(start_link)+1);
+    current=start_link;
+    current[strlen(start_link)]='\0';
+    size_t current_len = strlen(current); //Grabs size of current article name
+
+    //Universal between the two.
     const char *prefix = "https://en.wikipedia.org/wiki/";
     size_t prefix_len = strlen(prefix); //Grabs size so it isn't called like 5 million times.  
 
@@ -243,6 +259,11 @@ int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *lin
     if(target_len>=prefix_len && strncmp(target,prefix,prefix_len)==0)
     {
         memmove(target, target + prefix_len, target_len-prefix_len+1); //Moves the modified,cmped string to the initial str var.  
+    }
+    //Dpes same as above but for current instead.  
+    if(current_len>=prefix_len && strncmp(current,prefix,prefix_len)==0)
+    {
+        memmove(current, current + prefix_len, current_len-prefix_len+1); //Moves the modified,cmped string to the initial str var.  
     }
 
     //Checks and verifies that everything went okay with the curling of the link.  If it fails, flags a download problem.  
@@ -257,30 +278,11 @@ int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *lin
     rewind(HTML_outputFile);
 
     //Put file into parseHTML with the fullDataFile, the links, and the target.  
-    parseHTML(HTML_outputFile,links_file,target);
-
-        //Check if the line is NULL, if so stop
-    if(links_file == NULL)
-    {
-        fprintf(stderr, "error opening the right file, dummy\n");
-        return EXIT_FAILURE;
-    }
-
-    // Initialize the queue for URL grabbing
-    initQueue(&queue);
-
-    rewind(links_file); //I DID IT TOO, ARGH >:(
-
-    // While there's still lines of text in the links file, queue each url and add the rest of the functionality later
-    while (fgets(line, sizeof(line), links_file)!= NULL) {
-        enqueue(&queue, line);
-    }
-    printQueue(&queue);
+    parseHTML(HTML_outputFile,links_file,current,target);
 
     //cleans up the whole shabang when done.
-    destroyQueue(&queue);
     curl_easy_cleanup(curl);
-    fclose(HTML_outputFile);
-    fclose(links_file);
+    fclose(HTML_outputFile); //Closes the file
+    fclose(links_file); //Closes the links file
     return EXIT_SUCCESS; //Ends the whole thing with a good note.
 }
