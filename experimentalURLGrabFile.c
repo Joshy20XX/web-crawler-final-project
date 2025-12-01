@@ -1,14 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <curl/curl.h>
 #include <pthread.h>
+#include <curl/curl.h>
 
 //create a function which takes the page and then assigns it a queue of all of the article links present within it.
 
 //URL Queue is a linked from what Im seeing. Define its structure for queue elements.
 typedef struct URLQueueNode {
-    char *url;
+    char *url; //the current url
+    int depth; //necessary for depth tracking
+
+    //Need for parent URL.
+    char *parentURL;
+
     struct URLQueueNode *next; //Points to the next node in the queue
 } URLQueueNode;
 
@@ -209,7 +214,6 @@ int parseHTML(FILE *fileptr,FILE *outFileptr,char *current_name,char *target_nam
         }
     }
 }
-
 int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *links_file)
 {
     //NOTE:  In a multithreaded environment, grabURL should be given thread-specific HTML output file and thread specific links
@@ -223,7 +227,9 @@ int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *lin
     //Takes arguments of a starting link, a target link, and then an HTML output file and a file which will use parseHTML to 
     //output all links to other articles present within that article to that file.  Queueing can then be done from there
     CURL *curl = curl_easy_init();
-    
+    URLQueue queue;
+    char line[1024];
+
     //Checks if curl isn't working, in which case it fails on initialization.  
     if (!curl)
     {
@@ -279,6 +285,21 @@ int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *lin
 
     //Put file into parseHTML with the fullDataFile, the links, and the target.  
     parseHTML(HTML_outputFile,links_file,current,target);
+
+    if(links_file == NULL)
+    {
+        fprintf(stderr, "ur a dumbass, you didn't open the right skibidi file.\n");
+        return EXIT_FAILURE;
+    }
+    initQueue(&queue);
+
+    rewind(links_file);
+
+    while(fgets(line, sizeof(line), links_file)!=NULL)
+    {
+        enqueue(&queue,line);
+    }
+
 
     //cleans up the whole shabang when done.
     curl_easy_cleanup(curl);
