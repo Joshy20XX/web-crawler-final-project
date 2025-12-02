@@ -9,11 +9,8 @@
 //URL Queue is a linked from what Im seeing. Define its structure for queue elements.
 typedef struct URLQueueNode {
     char *url; //the current url
+    struct URLQueueNode *parent; //for parent url
     int depth; //necessary for depth tracking
-
-    //Need for parent URL.
-    char *parentURL;
-
     struct URLQueueNode *next; //Points to the next node in the queue
 } URLQueueNode;
 
@@ -30,10 +27,12 @@ void initQueue(URLQueue *queue) {
 }
 
 // Add a URL to the queue.
-void enqueue(URLQueue *queue, const char *url) {
+void enqueue(URLQueue *queue, const char *url, URLQueueNode *parent, int depth) {
     URLQueueNode *newNode = malloc(sizeof(URLQueueNode));
-    newNode->url = strdup(url);
-    newNode->next = NULL;
+    newNode->url = strdup(url); //Adds for url data
+    newNode->next = NULL; //Adds for the pointer to next.  
+    newNode->parent = parent; //Adds parent funct.
+    newNode->depth = depth; //Adds depth functionality.
 
     //pthread_mutex_lock(&queue->lock);
     if (queue->tail) {
@@ -102,6 +101,8 @@ int parseHTML(FILE*inputFile,FILE*outputFile,char*start_name,char*target_name); 
 
 int grabURL(char *start_link, char *target_link,FILE *URL_outputFile, FILE *links_file); //Prototype
 
+int addToQueue(FILE *links_file, URLQueue *queue, URLQueueNode *parent, int depth);
+
 //int queueURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *links_file); //NONSENSE
 
 //Main function. 
@@ -148,8 +149,33 @@ int main(int argc, char *argv[]) {
         printf("No depth value was provided. Abort!\n");
         return 1;
     }
+    //ALL QUEUEING STUFF GOES HERE
+    URLQueue queue;
+    int maxDepth = atoi(argv[3]);
+    int startingDepth = 0;
+    int currentDepth = 0;
+    //Initialize the Queue
+    initQueue(&queue);
+
+
+    char *current = (char *)malloc(strlen(argv[1])+1);
+    current=argv[1];
+    current[strlen(argv[1])]='\0';
     
+    //Make a URL queue node of the parent
+    enqueue(&queue, current, NULL, 0);
+    currentDepth+=1;
+    URLQueueNode *curParent = queue.tail;
+
     grabURL(argv[1], argv[2], fullDataFile, links);
+    currentDepth+=1;
+    //After grabURL, the whole queue should be enqueued.  Which is great.  
+    
+    addToQueue(links, &queue, curParent, currentDepth);
+
+    printQueue(&queue);
+
+    fclose(links); //Closes the links file at the very end of the enqueue loop.  
     return EXIT_SUCCESS;
 }
 
@@ -163,6 +189,7 @@ int parseHTML(FILE *fileptr,FILE *outFileptr,char *current_name,char *target_nam
     const char *closing="\"";
     char *opening_ptr, *closing_ptr; //Opening and closing pointers for the location of the string opening and closing.
 
+    //Rewrite so it returns an array
 
     //Opens the file for writing
     //Checks if the entered file has nothing to error out.  
@@ -198,6 +225,8 @@ int parseHTML(FILE *fileptr,FILE *outFileptr,char *current_name,char *target_nam
                     if(strstr(articleName, current_name)==NULL)
                     {
                         fprintf(outFileptr,"https://en.wikipedia.org/wiki/%s\n",articleName); //prints article name to the file
+                        
+                        //Add them to the queue
                     }
                 }
 
@@ -227,8 +256,7 @@ int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *lin
     //Takes arguments of a starting link, a target link, and then an HTML output file and a file which will use parseHTML to 
     //output all links to other articles present within that article to that file.  Queueing can then be done from there
     CURL *curl = curl_easy_init();
-    URLQueue queue;
-    char line[1024];
+
 
     //Checks if curl isn't working, in which case it fails on initialization.  
     if (!curl)
@@ -291,19 +319,22 @@ int grabURL(char *start_link, char *target_link,FILE *HTML_outputFile, FILE *lin
         fprintf(stderr, "ur a dumbass, you didn't open the right skibidi file.\n");
         return EXIT_FAILURE;
     }
-    initQueue(&queue);
-
     rewind(links_file);
-
-    while(fgets(line, sizeof(line), links_file)!=NULL)
-    {
-        enqueue(&queue,line);
-    }
-
+    //enqueue(&queue,line,result,curDepth);
 
     //cleans up the whole shabang when done.
     curl_easy_cleanup(curl);
     fclose(HTML_outputFile); //Closes the file
-    fclose(links_file); //Closes the links file
     return EXIT_SUCCESS; //Ends the whole thing with a good note.
+}
+
+int addToQueue(FILE*links_file, URLQueue *queue, URLQueueNode *parent, int depth)
+{
+    char lineBuffer[256];
+    
+    //Loop through all lines in the link file and enter them into the queue.  
+    while(fgets(lineBuffer,256,links_file) != NULL)
+    {
+        enqueue(queue,lineBuffer,parent,depth);
+    }
 }
