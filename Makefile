@@ -2,7 +2,7 @@ all: build
 
 build:
 	@echo "Building"
-	gcc experimentalURLGrabFile.c -o crawler -lcurl
+	gcc webcrawler2.c -o crawler -lcurl -lpthread
 	@echo "Done!"
 	
 clean_all:
@@ -22,4 +22,3 @@ clean_exe:
 	@echo "Cleaning EXE"
 	rm crawler
 	@echo "Done!"
-
