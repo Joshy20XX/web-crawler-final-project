@@ -329,9 +329,9 @@ int main(int argc, char *argv[]) {
 
     int maxDepth = atoi(argv[3]);
 
-    //Found an edge case. If the user specifies a depth <= 0, the program gets trapped in an infinite loop
-    if (maxDepth <= 0) {
-        printf("The specified max depth is too low. Try a depth of 1 or higher.\n");
+    //Found an edge case. If the user specifies a negative depth, the program gets trapped in an infinite loop
+    if (maxDepth < 0) {
+        printf("The specified max depth is too low. Try a higher depth.\n");
         return EXIT_FAILURE;
     }
 
