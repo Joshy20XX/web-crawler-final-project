@@ -328,6 +328,13 @@ int main(int argc, char *argv[]) {
     URLQueue queue;
 
     int maxDepth = atoi(argv[3]);
+
+    //Found an edge case. If the user specifies a depth <= 0, the program gets trapped in an infinite loop
+    if (maxDepth <= 0) {
+        printf("The specified max depth is too low. Try a depth of 1 or higher.\n");
+        return EXIT_FAILURE;
+    }
+
     int startingDepth = 0;
     
     //Initialize the Queue
