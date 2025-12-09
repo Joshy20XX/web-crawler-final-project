@@ -2,7 +2,7 @@ all: build
 
 build:
 	@echo "Building"
-	gcc webcrawler2.c -o crawler -lcurl -lpthread
+	gcc crawler.c -o crawler -lcurl -lpthread
 	@echo "Done!"
 	
 clean_all:
